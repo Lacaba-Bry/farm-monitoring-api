@@ -1,15 +1,21 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { SuppliesService } from './supplies.service.js';
-import { CreateSupplyDto } from './dto/create-supply.dto.js';
-import { UpdateSupplyDto } from './dto/update-supply.dto.js';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Request, UseGuards } from '@nestjs/common';
+import { SuppliesService } from './supplies.service';
+import { CreateSupplyDto } from './dto/create-supply.dto';
+import { UpdateSupplyDto } from './dto/update-supply.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { UserRole } from '../users/entities/user.entity';
 
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('supplies')
 export class SuppliesController {
   constructor(private readonly suppliesService: SuppliesService) {}
 
+  @Roles(UserRole.FARM_MANAGER)
   @Post()
-  create(@Body() createSupplyDto: CreateSupplyDto) {
-    return this.suppliesService.create(createSupplyDto);
+  create(@Body() dto: CreateSupplyDto) {
+    return this.suppliesService.create(dto);
   }
 
   @Get()
@@ -22,11 +28,13 @@ export class SuppliesController {
     return this.suppliesService.findOne(+id);
   }
 
+  @Roles(UserRole.FARM_MANAGER)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSupplyDto: UpdateSupplyDto) {
-    return this.suppliesService.update(+id, updateSupplyDto);
+  update(@Param('id') id: string, @Body() dto: UpdateSupplyDto, @Request() req) {
+    return this.suppliesService.update(+id, dto, req.user.userId);
   }
 
+  @Roles(UserRole.FARM_MANAGER)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.suppliesService.remove(+id);
