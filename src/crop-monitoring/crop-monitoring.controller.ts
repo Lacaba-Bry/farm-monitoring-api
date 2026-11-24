@@ -1,34 +1,42 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { CropMonitoringService } from './crop-monitoring.service.js';
-import { CreateCropMonitoringDto } from './dto/create-crop-monitoring.dto.js';
-import { UpdateCropMonitoringDto } from './dto/update-crop-monitoring.dto.js';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import { CropMonitoringService } from './crop-monitoring.service';
+import { CreateCropMonitoringDto } from './dto/create-crop-monitoring.dto';
+import { UpdateCropMonitoringDto } from './dto/update-crop-monitoring.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { UserRole } from '../users/entities/user.entity';
 
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('crop-monitoring')
 export class CropMonitoringController {
-  constructor(private readonly cropMonitoringService: CropMonitoringService) {}
+  constructor(private readonly monitoringService: CropMonitoringService) {}
 
+  @Roles(UserRole.FARMER, UserRole.FARM_WORKER, UserRole.FARM_MANAGER)
   @Post()
-  create(@Body() createCropMonitoringDto: CreateCropMonitoringDto) {
-    return this.cropMonitoringService.create(createCropMonitoringDto);
+  create(@Body() dto: CreateCropMonitoringDto) {
+    return this.monitoringService.create(dto);
   }
 
   @Get()
-  findAll() {
-    return this.cropMonitoringService.findAll();
+  findAll(@Query('cropId') cropId?: string) {
+    return this.monitoringService.findAll(cropId ? +cropId : undefined);
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.cropMonitoringService.findOne(+id);
+    return this.monitoringService.findOne(+id);
   }
 
+  @Roles(UserRole.FARMER, UserRole.FARM_MANAGER)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCropMonitoringDto: UpdateCropMonitoringDto) {
-    return this.cropMonitoringService.update(+id, updateCropMonitoringDto);
+  update(@Param('id') id: string, @Body() dto: UpdateCropMonitoringDto) {
+    return this.monitoringService.update(+id, dto);
   }
 
+  @Roles(UserRole.FARM_MANAGER)
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.cropMonitoringService.remove(+id);
+    return this.monitoringService.remove(+id);
   }
 }

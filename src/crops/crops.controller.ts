@@ -1,20 +1,26 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { CropsService } from './crops.service.js';
-import { CreateCropDto } from './dto/create-crop.dto.js';
-import { UpdateCropDto } from './dto/update-crop.dto.js';
+import { Controller, Get, Post, Body, Put, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import { CropsService } from './crops.service';
+import { CreateCropDto } from './dto/create-crop.dto';
+import { UpdateCropDto } from './dto/update-crop.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { UserRole } from '../users/entities/user.entity';
 
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('crops')
 export class CropsController {
   constructor(private readonly cropsService: CropsService) {}
 
+  @Roles(UserRole.FARMER, UserRole.FARM_MANAGER)
   @Post()
-  create(@Body() createCropDto: CreateCropDto) {
-    return this.cropsService.create(createCropDto);
+  create(@Body() dto: CreateCropDto) {
+    return this.cropsService.create(dto);
   }
 
   @Get()
-  findAll() {
-    return this.cropsService.findAll();
+  findAll(@Query('cropStatus') cropStatus?: string) {
+    return this.cropsService.findAll(cropStatus);
   }
 
   @Get(':id')
@@ -22,11 +28,24 @@ export class CropsController {
     return this.cropsService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCropDto: UpdateCropDto) {
-    return this.cropsService.update(+id, updateCropDto);
+  @Get(':id/crop-monitoring')
+  findMonitoringByCrop(@Param('id') id: string) {
+    return this.cropsService.findMonitoringByCrop(+id);
   }
 
+  @Roles(UserRole.FARMER, UserRole.FARM_MANAGER)
+  @Put(':id')
+  replace(@Param('id') id: string, @Body() dto: UpdateCropDto) {
+    return this.cropsService.update(+id, dto);
+  }
+
+  @Roles(UserRole.FARMER, UserRole.FARM_MANAGER)
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: UpdateCropDto) {
+    return this.cropsService.update(+id, dto);
+  }
+
+  @Roles(UserRole.FARM_MANAGER)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.cropsService.remove(+id);
